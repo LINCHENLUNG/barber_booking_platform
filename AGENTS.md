@@ -28,3 +28,9 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Application conventions
+- Keep TanStack Start file routing and the client-only authenticated layout; the platform runtime requires this bootstrap.
+- Treat account-kind metadata as display personalization only, never as authorization; future privileged roles require protected role records.
+- Keep v1 featured listings static and auth isolated from application data; no custom tables are needed for this shell.
+- Put shared authentication state in one root provider; a single subscription prevents conflicting navigation and cache updates.
