@@ -22,3 +22,8 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+# Local env (real values live in Vercel env; .env.example is the template)
+.env
+.env.local
+.env.*.local
