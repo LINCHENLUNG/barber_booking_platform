@@ -1,36 +1,19 @@
-<!-- LOVABLE:BEGIN -->
-> [!IMPORTANT]
-> This project is connected to [Lovable](https://lovable.dev). Avoid rewriting
-> published git history — force pushing, or rebasing/amending/squashing commits
-> that are already pushed — as it rewrites history on Lovable's side and the
-> user will likely lose their project history.
->
-> Commits you push to the connected branch sync back to Lovable and show up in
-> the editor, so keep the branch in a working state.
+# Barberly — project conventions
 
-## What Lovable manages
+Barber booking marketplace (course: 抽成制理髮師預約平台). Built on Lovable for M0 v1,
+now developed directly in this repo: code → GitHub → Vercel. Lovable is no longer used.
 
-Rules outside this block are the project's own. Change the pieces below in
-Lovable, not by hand. With the [Lovable MCP](https://mcp.lovable.dev)
-connected, `send_message` asks Lovable to do it; otherwise ask the user to
-use the editor.
+## Stack
+- Plain **Vite SPA** (React 19 + React Router + Tailwind v4 + shadcn/ui). No SSR.
+- `vercel.json` rewrites every non-`/api` path to `index.html` so `/login` and `/barbers` deep-link.
+- Supabase auth via `src/integrations/supabase/client.ts`, reading `VITE_SUPABASE_URL` +
+  `VITE_SUPABASE_PUBLISHABLE_KEY`. Publishable key only in the browser — never a service-role key.
 
-- **Database.** Do not add or edit `supabase/migrations/` or `drizzle/`.
-  Ask Lovable to change the schema.
-- **Generated files.** Do not edit a file whose header says it is automatically
-  generated.
-- **AI gateway.** Keep model calls on Lovable's gateway, and keep
-  `LOVABLE_API_KEY` out of browser code.
-- **Connectors.** Lovable provides native connectors. `list_connectors` shows
-  which are enabled; `add_connector` only returns the dashboard link. When a
-  connector is enabled, calls go through the connector gateway and need
-  `LOVABLE_API_KEY`. When Lovable does not provide one, users can bring their
-  own key and store it in Secrets.
-- **Secrets.** Lovable manages them. Do not put secret values in the repo.
-<!-- LOVABLE:END -->
-
-## Application conventions
-- Keep TanStack Start file routing and the client-only authenticated layout; the platform runtime requires this bootstrap.
-- Treat account-kind metadata as display personalization only, never as authorization; future privileged roles require protected role records.
-- Keep v1 featured listings static and auth isolated from application data; no custom tables are needed for this shell.
-- Put shared authentication state in one root provider; a single subscription prevents conflicting navigation and cache updates.
+## Conventions
+- Routes live in `src/App.tsx`; pages in `src/pages/*Page.tsx`. M0 routes: `/`, `/login`, `/barbers`.
+- React component files are PascalCase (`BarberCard.tsx`); hooks/utils camelCase.
+- Role values are exactly `customer` | `shop` | `admin` (sign-up writes only `customer` or `shop`
+  into `options.data.role`). Labels may say "Barber"; the value is `shop`.
+- Every schema change goes through a Supabase migration; RLS on every table; regenerate
+  `src/integrations/supabase/types.ts` after each migration.
+- No secrets in commits.

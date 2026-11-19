@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { Link } from "react-router-dom";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useState } from "react";
 import { ArrowUpRight, Search, Scissors, BadgeCheck, CalendarCheck, ShieldCheck, Star, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -11,17 +12,14 @@ import portrait2 from "@/assets/barber-2.jpg";
 import portrait3 from "@/assets/barber-3.jpg";
 const portraits = [portrait0, portrait1, portrait2, portrait3];
 
-export const Route = createFileRoute("/")({
-  head: () => ({ meta: [{ title: "Barberly — Style with Confident Hair" }, { name: "description", content: "Find your next great barber. Discover talented stylists for cuts, color, perms, and beard grooming." }, { property: "og:title", content: "Barberly — Style with Confident Hair" }, { property: "og:description", content: "Discover talented barbers and your next great look." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary_large_image" }] }),
-  component: Index,
-});
 const barbers = [
   { name: "Alex Morgan", shop: "The Modern Chair", location: "Brooklyn, NY", services: ["Cut", "Beard"], rating: "4.9", reviews: 128, price: 35 },
   { name: "Sofia Chen", shop: "Studio & Strand", location: "Manhattan, NY", services: ["Cut", "Color"], rating: "4.9", reviews: 96, price: 45 },
   { name: "Leo Bennett", shop: "Good Company", location: "Brooklyn, NY", services: ["Cut", "Perm", "Beard"], rating: "4.8", reviews: 84, price: 30 },
   { name: "Emma Davis", shop: "The Hair Edit", location: "Queens, NY", services: ["Cut", "Color", "Perm"], rating: "4.9", reviews: 112, price: 40 },
 ];
-function Index() {
+export default function HomePage() {
+  usePageTitle("Barberly — Style with Confident Hair");
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("All");
   const visible = barbers.map((barber, index) => ({ ...barber, index })).filter(b => (filter === "All" || b.services.includes(filter)) && `${b.name} ${b.shop} ${b.location} ${b.services.join(" ")}`.toLowerCase().includes(query.toLowerCase()));

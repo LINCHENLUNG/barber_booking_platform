@@ -1,24 +1,24 @@
-# Screenshot to Specification
+# Barberly — Barber Booking Platform
 
-Implement exactly the screenshot and nothing else
+A barber / hair-stylist booking marketplace: customers find a stylist and book online; shops list
+barbers, services and schedules. v1 (M0) was generated with Lovable and is now developed directly
+in this repo.
 
-This project was built with [Lovable](https://lovable.dev).
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/be962bca-a8c3-4e11-ae42-b2510a2378d2).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+## M0 scope
+- Landing page `/` — serif hero + search, trust logo strip, 4 features, Popular barbers grid.
+- `/login` — combined Sign In / Sign Up with a Customer / Barber role tab (`options.data.role` =
+  `customer` | `shop`).
+- `/barbers` — signed-in, role-aware placeholder shell with Sign Out.
 
 ## Development
-
-Prefer working locally? You need Node.js and npm — [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating).
-
 ```sh
-git clone <this-repository-url>
-cd <repository-name>
-npm i
+npm install
+cp .env.example .env   # fill in your Supabase URL + publishable key
 npm run dev
 ```
+
+`npm run build` type-checks and builds the static SPA into `dist/`. `npm test` runs the tests.
+
+## Deploy
+Vercel (framework preset: Vite). Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_PUBLISHABLE_KEY` in
+Vercel → Settings → Environment Variables, then redeploy.
