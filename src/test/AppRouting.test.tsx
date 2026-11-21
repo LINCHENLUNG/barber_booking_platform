@@ -43,7 +43,7 @@ describe("App routing (SPA)", () => {
     expect(screen.getByText("Page not found")).toBeInTheDocument();
   });
   it("never routes to an admin page in M1.1", () => {
-    renderAt("/admin/payouts");
+    renderAt("/admin");
     expect(screen.getByText("Page not found")).toBeInTheDocument();
   });
 });
