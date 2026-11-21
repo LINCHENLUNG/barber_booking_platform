@@ -1,25 +1,26 @@
 import { Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import HomePage from "@/pages/HomePage";
 import LoginPage from "@/pages/LoginPage";
 import BarbersPage from "@/pages/BarbersPage";
+import ShopPage from "@/pages/ShopPage";
+import ShopBookingsPage from "@/pages/ShopBookingsPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
-// M0 routes: only /, /login and /barbers (spec). /auth is kept as a redirect for old links.
+const signedIn = (page: ReactNode) => <ProtectedRoute>{page}</ProtectedRoute>;
+
+// /barbers = customer landing, /shop = shop onboarding, /shop/bookings = services & slots.
+// Role (profiles.role) decides where a user lands; /auth is kept as a redirect for old links.
 export default function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/auth" element={<Navigate to="/login" replace />} />
-      <Route
-        path="/barbers"
-        element={
-          <ProtectedRoute>
-            <BarbersPage />
-          </ProtectedRoute>
-        }
-      />
+      <Route path="/barbers" element={signedIn(<BarbersPage />)} />
+      <Route path="/shop" element={signedIn(<ShopPage />)} />
+      <Route path="/shop/bookings" element={signedIn(<ShopBookingsPage />)} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

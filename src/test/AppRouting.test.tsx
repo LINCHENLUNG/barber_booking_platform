@@ -1,5 +1,6 @@
 import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { describe, expect, it, vi } from "vitest";
 import type { ReactNode } from "react";
 
@@ -14,9 +15,11 @@ import App from "@/App";
 
 const renderAt = (path: string) =>
   render(
-    <MemoryRouter initialEntries={[path]}>
-      <App />
-    </MemoryRouter>,
+    <QueryClientProvider client={new QueryClient()}>
+      <MemoryRouter initialEntries={[path]}>
+        <App />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 
 describe("App routing (SPA)", () => {
@@ -28,12 +31,19 @@ describe("App routing (SPA)", () => {
     renderAt("/login");
     expect(screen.getByText("Welcome back.")).toBeInTheDocument();
   });
-  it("redirects a signed-out visitor from /barbers to /login", () => {
-    renderAt("/barbers");
-    expect(screen.getByText("Welcome back.")).toBeInTheDocument();
-  });
+  it.each(["/barbers", "/shop", "/shop/bookings"])(
+    "redirects a signed-out visitor from %s to /login",
+    (path) => {
+      renderAt(path);
+      expect(screen.getByText("Welcome back.")).toBeInTheDocument();
+    },
+  );
   it("shows the 404 page for unknown routes", () => {
     renderAt("/nope");
+    expect(screen.getByText("Page not found")).toBeInTheDocument();
+  });
+  it("never routes to an admin page in M1.1", () => {
+    renderAt("/admin/payouts");
     expect(screen.getByText("Page not found")).toBeInTheDocument();
   });
 });
