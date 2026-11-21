@@ -5,7 +5,8 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export type Barber = Tables<"barbers">;
 export type Service = Tables<"services">;
-export type Slot = Tables<"bookable_slots">;
+/** A published slot plus the booking_slots rows referencing it (non-empty = held by a booking). */
+export type Slot = Tables<"bookable_slots"> & { booking_slots?: { slot_id: string }[] };
 export type BarberPhoto = Tables<"barber_photos">;
 
 /** Single-row platform config (currency + slot length). World-readable. */
@@ -62,7 +63,7 @@ export function useSlots(barberId: string | undefined) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("bookable_slots")
-        .select("*")
+        .select("*, booking_slots(slot_id)")
         .eq("barber_id", barberId!)
         .order("starts_at");
       if (error) throw error;

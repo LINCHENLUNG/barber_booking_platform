@@ -1,4 +1,5 @@
 // Pure helpers for the shop side (M1.1). Kept framework-free so they're unit-testable.
+import { displayTzDate } from "./time";
 
 export const SERVICE_CATEGORIES = ["cut", "color", "perm", "beard"] as const;
 export type ServiceCategory = (typeof SERVICE_CATEGORIES)[number];
@@ -40,12 +41,12 @@ export function photoPath(barberId: string, fileName: string, id: string = crypt
 }
 
 /**
- * Consecutive `slotMinutes`-long windows between two local times on a date.
- * Date "2026-12-01", "10:00"→"12:00", 30 → four slots. A trailing partial window is dropped.
+ * Consecutive `slotMinutes`-long windows between two times on a date, in the display timezone
+ * (Taipei). Date "2026-12-01", "10:00"→"12:00", 30 → four slots. A trailing partial window is dropped.
  */
 export function buildDaySlots(date: string, start: string, end: string, slotMinutes: number) {
-  const from = new Date(`${date}T${start}`);
-  const to = new Date(`${date}T${end}`);
+  const from = displayTzDate(date, start);
+  const to = displayTzDate(date, end);
   const slots: { starts_at: string; ends_at: string }[] = [];
   if (Number.isNaN(from.getTime()) || Number.isNaN(to.getTime()) || slotMinutes <= 0) return slots;
   for (

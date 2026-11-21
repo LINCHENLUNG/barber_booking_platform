@@ -5,11 +5,10 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { usePlatformSettings, useSlots, type Slot } from "@/hooks/useShopData";
 import { buildDaySlots } from "@/lib/shop";
+import { errMessage } from "@/lib/errors";
+import { DISPLAY_TZ_LABEL, dayKey, fmtDay, fmtTime as time, todayKey as today } from "@/lib/time";
 
-const today = () => new Date().toLocaleDateString("en-CA"); // YYYY-MM-DD in local time
-const dayKey = (iso: string) => new Date(iso).toLocaleDateString("en-CA");
-const time = (iso: string) =>
-  new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+const isBooked = (s: Slot) => (s.booking_slots?.length ?? 0) > 0;
 
 /**
  * B. Publish bookable slots for one barber. A slot is just a `slot_minutes`-long time window
@@ -66,8 +65,9 @@ export function SlotPublisher({ barberId }: { barberId: string }) {
   async function remove(ids: string[]) {
     setError("");
     setNotice("");
+    if (!ids.length) return;
     const { error } = await supabase.from("bookable_slots").delete().in("id", ids);
-    if (error) setError(error.message);
+    if (error) setError(errMessage(error));
     await refresh();
   }
 
@@ -79,6 +79,7 @@ export function SlotPublisher({ barberId }: { barberId: string }) {
       </h2>
       <p className="text-sm text-muted-foreground mt-1">
         Each slot is {slotMinutes} minutes. Pick a day and opening hours to publish a run of slots.
+        Times are {DISPLAY_TZ_LABEL}.
       </p>
 
       <form onSubmit={publish} className="barber-panel mt-5">
@@ -147,38 +148,37 @@ export function SlotPublisher({ barberId }: { barberId: string }) {
         {Object.entries(byDay).map(([day, list]) => (
           <div key={day} className="barber-panel">
             <div className="flex items-center justify-between gap-3">
-              <p className="font-medium">
-                {new Date(`${day}T00:00`).toLocaleDateString([], {
-                  weekday: "short",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </p>
+              <p className="font-medium">{fmtDay(day)}</p>
               <Button
                 size="sm"
                 variant="chip"
+                disabled={list.every(isBooked)}
                 onClick={() => {
-                  if (window.confirm(`Delete all ${list.length} slots on ${day}?`))
-                    void remove(list.map((s) => s.id));
+                  const free = list.filter((s) => !isBooked(s));
+                  if (window.confirm(`Delete the ${free.length} unbooked slots on ${day}?`))
+                    void remove(free.map((s) => s.id));
                 }}
               >
                 <Trash2 />
-                Clear day
+                Clear unbooked
               </Button>
             </div>
             <ul className="slot-chips mt-3">
               {list.map((s) => (
-                <li key={s.id}>
+                <li key={s.id} className={isBooked(s) ? "booked" : ""}>
                   <span>
                     {time(s.starts_at)}–{time(s.ends_at)}
+                    {isBooked(s) && " · booked"}
                   </span>
-                  <button
-                    type="button"
-                    aria-label={`Delete slot ${time(s.starts_at)}`}
-                    onClick={() => void remove([s.id])}
-                  >
-                    ×
-                  </button>
+                  {!isBooked(s) && (
+                    <button
+                      type="button"
+                      aria-label={`Delete slot ${time(s.starts_at)}`}
+                      onClick={() => void remove([s.id])}
+                    >
+                      ×
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
