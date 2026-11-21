@@ -128,12 +128,13 @@ export function ServicesEditor({ barberId }: { barberId: string }) {
         <p className="text-sm font-medium mb-3">{editingId ? "Edit service" : "Add a service"}</p>
         <div className="service-form">
           <label className="block text-sm">
-            名稱 Name
+            服務名稱 Service name
             <input
               required
               className="auth-field"
               value={draft.name}
               onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+              placeholder="e.g. Men's cut"
             />
           </label>
           <label className="block text-sm">
