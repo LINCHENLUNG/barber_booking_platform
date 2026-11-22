@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarX, LoaderCircle, MapPin } from "lucide-react";
+import { CalendarX, CreditCard, LoaderCircle, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -9,6 +9,7 @@ import { useMyBookings } from "@/hooks/useBuyerData";
 import { usePlatformSettings } from "@/hooks/useShopData";
 import { ShellHeader } from "@/components/ShellHeader";
 import { supabase } from "@/integrations/supabase/client";
+import { startCheckout } from "@/lib/checkout";
 import { errMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/shop";
 import { DISPLAY_TZ_LABEL, dayKey, fmtDay, fmtTime } from "@/lib/time";
@@ -26,6 +27,17 @@ export default function MyBookingsPage() {
   const { data: bookings = [], isLoading, error } = useMyBookings();
   const { data: settings } = usePlatformSettings();
   const [cancelling, setCancelling] = useState<string>();
+  const [paying, setPaying] = useState<string>();
+
+  async function pay(id: string) {
+    setPaying(id);
+    try {
+      await startCheckout(id); // navigates to Stripe on success
+    } catch (e) {
+      setPaying(undefined);
+      toast.error(errMessage(e, "Could not start payment."));
+    }
+  }
 
   async function cancel(id: string) {
     if (!window.confirm("Cancel this booking? The time slots will be released.")) return;
@@ -111,6 +123,18 @@ export default function MyBookingsPage() {
                       settings?.currency_minor_units ?? 0,
                     )}
                   </p>
+                  {b.status === "pending_payment" && (
+                    <Button
+                      size="sm"
+                      variant="pill"
+                      className="mt-3 mr-2"
+                      disabled={paying === b.id}
+                      onClick={() => void pay(b.id!)}
+                    >
+                      {paying === b.id ? <LoaderCircle className="animate-spin" /> : <CreditCard />}
+                      Pay now
+                    </Button>
+                  )}
                   {live && (
                     <Button
                       size="sm"

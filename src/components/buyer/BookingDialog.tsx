@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { slotsForStart, validStarts, type SlotLite } from "@/lib/booking";
+import { startCheckout } from "@/lib/checkout";
 import { errMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/shop";
 import { DISPLAY_TZ_LABEL, dayKey, fmtDay, fmtTime } from "@/lib/time";
@@ -40,8 +41,8 @@ type Props = {
 
 /**
  * Book pop-up: service → date → start slot → Confirm. Stays on /barbers/:id.
- * Confirm calls create_booking (1 pending_payment booking + N booking_slots, atomically).
- * M2.1 swaps `confirm` to: create_booking → open Stripe Checkout with the returned id.
+ * Confirm calls create_booking (1 pending_payment booking + N booking_slots, atomically), then
+ * sends the customer to Stripe Checkout. The Stripe webhook — not this page — marks it paid.
  */
 export function BookingDialog(props: Props) {
   const { open, onOpenChange, barberId, barberName, services, slots } = props;
@@ -81,22 +82,30 @@ export function BookingDialog(props: Props) {
     if (!service || !startId) return;
     setBusy(true);
     setError("");
-    const { error } = await supabase.rpc("create_booking", {
+    const { data: bookingId, error } = await supabase.rpc("create_booking", {
       p_service_id: service.id,
       p_start_slot_id: startId,
     });
-    setBusy(false);
-    await queryClient.invalidateQueries({ queryKey: ["barber-slots", barberId] });
-    if (error) {
+    if (error || !bookingId) {
+      setBusy(false);
+      await queryClient.invalidateQueries({ queryKey: ["barber-slots", barberId] });
       setError(errMessage(error, "Could not complete the booking."));
       setStartId("");
       return;
     }
-    await queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
-    onOpenChange(false);
-    toast.success("Booking requested", {
-      description: `${service.name} with ${barberName}, ${fmtDay(day)} ${fmtTime(range[0]!.starts_at)}–${fmtTime(range[range.length - 1]!.ends_at)}. See it under My bookings.`,
-    });
+    // Booking is held as pending_payment; hand off to Stripe's hosted Checkout.
+    // It only becomes `paid` when the Stripe webhook confirms the payment.
+    try {
+      await startCheckout(bookingId);
+    } catch (e) {
+      setBusy(false);
+      await queryClient.invalidateQueries({ queryKey: ["barber-slots", barberId] });
+      await queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+      onOpenChange(false);
+      toast.error("Payment didn't start", {
+        description: `${errMessage(e, "Could not start payment.")} Your ${fmtDay(day)} ${fmtTime(range[0]!.starts_at)} booking is held — pay for it from My bookings.`,
+      });
+    }
   }
 
   return (
@@ -224,7 +233,7 @@ export function BookingDialog(props: Props) {
             disabled={busy || !service || range.length !== n}
             onClick={confirm}
           >
-            {busy ? <LoaderCircle className="animate-spin" /> : "Confirm booking"}
+            {busy ? <LoaderCircle className="animate-spin" /> : "Confirm & pay"}
           </Button>
         </DialogFooter>
       </DialogContent>
