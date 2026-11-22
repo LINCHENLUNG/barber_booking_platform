@@ -61,3 +61,7 @@ export function buildDaySlots(date: string, start: string, end: string, slotMinu
   }
   return slots;
 }
+
+/** "Barber name · Shop name" (falls back to the barber name if the shop has no name yet). */
+export const barberWithShop = (barberName: string, shopName: string | null | undefined) =>
+  shopName?.trim() ? `${barberName} · ${shopName.trim()}` : barberName;

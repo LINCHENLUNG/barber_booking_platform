@@ -444,6 +444,13 @@ export type Database = {
         Args: { p_service_id: string; p_start_slot_id: string }
         Returns: string
       }
+      get_shop_names: {
+        Args: { shop_ids: string[] }
+        Returns: {
+          display_name: string
+          id: string
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
     }
     Enums: {

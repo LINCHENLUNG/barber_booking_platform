@@ -9,12 +9,14 @@ import MyBookingsPage from "@/pages/MyBookingsPage";
 import BookingSuccessPage from "@/pages/BookingSuccessPage";
 import ShopPage from "@/pages/ShopPage";
 import ShopBookingsPage from "@/pages/ShopBookingsPage";
+import ShopOrdersPage from "@/pages/ShopOrdersPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 const signedIn = (page: ReactNode) => <ProtectedRoute>{page}</ProtectedRoute>;
 
 // Public: /, /login, /barbers (browse), /barbers/:id (detail + Book dialog).
-// Signed in: /bookings (customer's own), /bookings/success (post-Stripe poll), /shop (onboarding), /shop/bookings (services & slots).
+// Signed in: /bookings (customer's own), /bookings/success (post-Stripe poll), /shop (onboarding),
+// /shop/bookings (services & schedule), /shop/orders (incoming bookings for the shop's barbers).
 // Role (profiles.role) decides where a user lands; /auth is kept as a redirect for old links.
 export default function App() {
   return (
@@ -28,6 +30,7 @@ export default function App() {
       <Route path="/bookings/success" element={signedIn(<BookingSuccessPage />)} />
       <Route path="/shop" element={signedIn(<ShopPage />)} />
       <Route path="/shop/bookings" element={signedIn(<ShopBookingsPage />)} />
+      <Route path="/shop/orders" element={signedIn(<ShopOrdersPage />)} />
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );

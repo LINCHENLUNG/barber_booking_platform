@@ -28,7 +28,7 @@ export function useBarberDirectory() {
       const { data, error } = await supabase
         .from("barbers")
         .select(
-          "id, name, intro, address, services(category, price), barber_photos(id, storage_path, caption, is_featured, sort_order, created_at)",
+          "id, shop_id, name, intro, address, services(category, price), barber_photos(id, storage_path, caption, is_featured, sort_order, created_at)",
         )
         .order("created_at");
       if (error) throw error;
@@ -36,6 +36,26 @@ export function useBarberDirectory() {
     },
   });
 }
+
+/**
+ * Shop (storefront) names for a set of shop ids, via the get_shop_names RPC — which returns only
+ * id + display_name for accounts that own a barber (never email or bank fields).
+ */
+export function useShopNames(shopIds: string[]) {
+  const ids = [...new Set(shopIds)].sort();
+  return useQuery({
+    queryKey: ["shop-names", ids],
+    enabled: ids.length > 0,
+    staleTime: 5 * 60_000,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_shop_names", { shop_ids: ids });
+      if (error) throw error;
+      return new Map(data.map((s) => [s.id, s.display_name]));
+    },
+  });
+}
+
+export { barberWithShop } from "@/lib/shop";
 
 /** /barbers/:id — one barber with services and photos. */
 export function useBarber(id: string | undefined) {
@@ -46,7 +66,7 @@ export function useBarber(id: string | undefined) {
       const { data, error } = await supabase
         .from("barbers")
         .select(
-          "id, name, intro, address, services(id, name, category, price, required_slots), barber_photos(id, storage_path, caption, is_featured, sort_order, created_at)",
+          "id, shop_id, name, intro, address, services(id, name, category, price, required_slots), barber_photos(id, storage_path, caption, is_featured, sort_order, created_at)",
         )
         .eq("id", id!)
         .maybeSingle();

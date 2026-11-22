@@ -45,8 +45,9 @@ describe("App routing (SPA)", () => {
     renderAt("/barbers");
     expect(screen.getByText("Find a barber who gets you.")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Browse barbers" })).toBeInTheDocument();
   });
-  it.each(["/bookings", "/shop", "/shop/bookings"])(
+  it.each(["/bookings", "/shop", "/shop/bookings", "/shop/orders"])(
     "redirects a signed-out visitor from %s to /login",
     (path) => {
       renderAt(path);

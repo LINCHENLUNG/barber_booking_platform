@@ -3,7 +3,12 @@ import { Link } from "react-router-dom";
 import { MapPin, Scissors, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
-import { orderPhotos, useBarberDirectory } from "@/hooks/useBuyerData";
+import {
+  barberWithShop,
+  orderPhotos,
+  useBarberDirectory,
+  useShopNames,
+} from "@/hooks/useBuyerData";
 import { photoUrl, usePlatformSettings } from "@/hooks/useShopData";
 import { ShellHeader } from "@/components/ShellHeader";
 import { formatMoney, SERVICE_CATEGORIES, type ServiceCategory } from "@/lib/shop";
@@ -16,17 +21,19 @@ export default function BarbersPage() {
   usePageTitle("Find your barber — Barberly");
   const { data: barbers = [], isLoading, error } = useBarberDirectory();
   const { data: settings } = usePlatformSettings();
+  const { data: shopNames } = useShopNames(barbers.map((b) => b.shop_id));
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
 
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     return barbers.filter((b) => {
-      const text = `${b.name} ${b.address ?? ""} ${b.intro ?? ""}`.toLowerCase();
+      const shop = shopNames?.get(b.shop_id) ?? "";
+      const text = `${b.name} ${shop} ${b.address ?? ""} ${b.intro ?? ""}`.toLowerCase();
       const cats = new Set(b.services.map((s) => s.category as ServiceCategory));
       return (!q || text.includes(q)) && (filter === "all" || cats.has(filter));
     });
-  }, [barbers, query, filter]);
+  }, [barbers, shopNames, query, filter]);
 
   return (
     <>
@@ -40,7 +47,7 @@ export default function BarbersPage() {
             <Search size={16} />
             <input
               aria-label="Search barbers"
-              placeholder="Search by name or area"
+              placeholder="Search by barber, shop or area"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
             />
@@ -93,7 +100,9 @@ export default function BarbersPage() {
                   )}
                 </div>
                 <div className="p-4">
-                  <h2 className="font-display text-xl">{b.name}</h2>
+                  <h2 className="font-display text-xl">
+                    {barberWithShop(b.name, shopNames?.get(b.shop_id))}
+                  </h2>
                   {b.address && (
                     <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                       <MapPin size={12} />

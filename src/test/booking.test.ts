@@ -60,3 +60,15 @@ describe("helpers", () => {
     expect(dayKey("2030-01-01T17:00:00Z")).toBe("2030-01-02");
   });
 });
+
+import { barberWithShop } from "@/lib/shop";
+
+describe("barber · shop label", () => {
+  it("joins barber and shop names", () => {
+    expect(barberWithShop("Rick", "ZOOM")).toBe("Rick · ZOOM");
+  });
+  it("falls back to the barber name when the shop has no name", () => {
+    expect(barberWithShop("Rick", null)).toBe("Rick");
+    expect(barberWithShop("Rick", "  ")).toBe("Rick");
+  });
+});

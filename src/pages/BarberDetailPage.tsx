@@ -4,7 +4,14 @@ import { ArrowLeft, CalendarCheck, LoaderCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useAccount } from "@/components/AuthProvider";
-import { orderPhotos, useBarber, useBarberSlots } from "@/hooks/useBuyerData";
+import {
+  barberWithShop,
+  orderPhotos,
+  useBarber,
+  useBarberSlots,
+  useShopNames,
+} from "@/hooks/useBuyerData";
+import { useProfile } from "@/hooks/useProfile";
 import { usePlatformSettings } from "@/hooks/useShopData";
 import { ShellHeader } from "@/components/ShellHeader";
 import { PhotoCarousel } from "@/components/buyer/PhotoCarousel";
@@ -22,9 +29,14 @@ export default function BarberDetailPage() {
   const { data: barber, isLoading, error } = useBarber(id);
   const { data: slots = [] } = useBarberSlots(id);
   const { data: settings } = usePlatformSettings();
+  const { profile } = useProfile();
+  const { data: shopNames } = useShopNames(barber ? [barber.shop_id] : []);
   const [open, setOpen] = useState(false);
   const [serviceId, setServiceId] = useState<string>();
-  usePageTitle(barber ? `${barber.name} — Barberly` : "Barber — Barberly");
+  const title = barber ? barberWithShop(barber.name, shopNames?.get(barber.shop_id)) : "";
+  usePageTitle(barber ? `${title} — Barberly` : "Barber — Barberly");
+  // Only customer accounts can book (create_booking enforces this server-side too).
+  const notCustomer = !!user && !!profile && profile.role !== "customer";
 
   const currency = settings?.currency ?? "twd";
   const minor = settings?.currency_minor_units ?? 0;
@@ -41,6 +53,7 @@ export default function BarberDetailPage() {
       navigate(`/login?next=${encodeURIComponent(location.pathname)}`);
       return;
     }
+    if (notCustomer) return;
     setServiceId(sid);
     setOpen(true);
   }
@@ -73,7 +86,7 @@ export default function BarberDetailPage() {
 
             <div>
               <p className="eyebrow">Barber</p>
-              <h1 className="section-heading mt-2">{barber.name}</h1>
+              <h1 className="section-heading mt-2">{title}</h1>
               {barber.address && (
                 <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1">
                   <MapPin size={14} />
@@ -85,12 +98,17 @@ export default function BarberDetailPage() {
               <Button
                 variant="pill"
                 className="h-12 mt-6 w-full sm:w-auto"
-                disabled={!barber.services.length}
+                disabled={!barber.services.length || notCustomer}
                 onClick={() => book()}
               >
                 <CalendarCheck />
                 Book
               </Button>
+              {notCustomer && (
+                <p role="note" className="text-sm text-muted-foreground mt-3">
+                  Please use a customer account to book.
+                </p>
+              )}
 
               <section className="mt-9" aria-labelledby="services-h">
                 <h2 id="services-h" className="shop-heading text-2xl">
@@ -114,9 +132,11 @@ export default function BarberDetailPage() {
                         </div>
                         <div className="flex items-center gap-3">
                           <strong>{formatMoney(s.price, currency, minor)}</strong>
-                          <Button size="sm" variant="chip" onClick={() => book(s.id)}>
-                            Book
-                          </Button>
+                          {!notCustomer && (
+                            <Button size="sm" variant="chip" onClick={() => book(s.id)}>
+                              Book
+                            </Button>
+                          )}
                         </div>
                       </li>
                     ))}

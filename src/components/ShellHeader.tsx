@@ -1,15 +1,16 @@
 import { useState } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { LogOut, Store } from "lucide-react";
+import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/components/AuthProvider";
 import { useProfile } from "@/hooks/useProfile";
 
 /**
- * App header. Signed out: Barbers + Login. Customers: Barbers, My bookings, Become a shop.
- * Shops: Barbers, Shop setup, Bookings. Role comes from profiles.role.
+ * App header, role-based (profiles.role). Signed out: Browse barbers + Login.
+ * Customer: Browse barbers, My bookings. Shop: Browse barbers, My shop,
+ * Management (/shop/bookings), Orders (/shop/orders). "Booking" wording is customer-only.
  */
 export function ShellHeader() {
   const user = useAccount();
@@ -45,7 +46,7 @@ export function ShellHeader() {
         {!user && (
           <>
             <NavLink to="/barbers" className={navClass}>
-              Barbers
+              Browse barbers
             </NavLink>
             <Button variant="pill" asChild>
               <Link to={`/login?next=${encodeURIComponent(location.pathname)}`}>Login</Link>
@@ -53,35 +54,30 @@ export function ShellHeader() {
           </>
         )}
         {user && !isLoading && role === "shop" && (
-          <nav className="flex items-center gap-1" aria-label="Shop">
+          <nav className="shell-nav" aria-label="Shop">
             <NavLink to="/barbers" end className={navClass}>
-              Barbers
+              Browse barbers
             </NavLink>
             <NavLink to="/shop" end className={navClass}>
-              Shop setup
+              My shop
             </NavLink>
             <NavLink to="/shop/bookings" className={navClass}>
-              Bookings
+              Management
+            </NavLink>
+            <NavLink to="/shop/orders" className={navClass}>
+              Orders
             </NavLink>
           </nav>
         )}
         {user && !isLoading && role === "customer" && (
-          <nav className="flex items-center gap-1" aria-label="Customer">
+          <nav className="shell-nav" aria-label="Customer">
             <NavLink to="/barbers" end className={navClass}>
-              Barbers
+              Browse barbers
             </NavLink>
-            <NavLink to="/bookings" className={navClass}>
+            <NavLink to="/bookings" end className={navClass}>
               My bookings
             </NavLink>
           </nav>
-        )}
-        {user && !isLoading && role === "customer" && (
-          <Button variant="chip" asChild>
-            <Link to="/shop">
-              <Store />
-              開店 / Become a shop
-            </Link>
-          </Button>
         )}
         {user && (
           <>
