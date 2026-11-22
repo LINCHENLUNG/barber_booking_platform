@@ -178,9 +178,11 @@ export type Database = {
           paid_at: string | null
           payout_id: string | null
           price: number
+          refunded_at: string | null
           service_id: string
           status: string
           stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
           updated_at: string
         }
         Insert: {
@@ -190,9 +192,11 @@ export type Database = {
           paid_at?: string | null
           payout_id?: string | null
           price: number
+          refunded_at?: string | null
           service_id: string
           status?: string
           stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -202,9 +206,11 @@ export type Database = {
           paid_at?: string | null
           payout_id?: string | null
           price?: number
+          refunded_at?: string | null
           service_id?: string
           status?: string
           stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -390,9 +396,12 @@ export type Database = {
           paid_at: string | null
           payout_id: string | null
           price: number | null
+          refunded_at: string | null
           service_id: string | null
           starts_at: string | null
           status: string | null
+          stripe_payment_intent_id: string | null
+          stripe_refund_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -403,9 +412,12 @@ export type Database = {
           paid_at?: string | null
           payout_id?: string | null
           price?: number | null
+          refunded_at?: string | null
           service_id?: string | null
           starts_at?: never
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -416,9 +428,12 @@ export type Database = {
           paid_at?: string | null
           payout_id?: string | null
           price?: number | null
+          refunded_at?: string | null
           service_id?: string | null
           starts_at?: never
           status?: string | null
+          stripe_payment_intent_id?: string | null
+          stripe_refund_id?: string | null
           updated_at?: string | null
         }
         Relationships: [

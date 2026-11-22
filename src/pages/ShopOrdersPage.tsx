@@ -38,7 +38,7 @@ function useIncomingBookings(barberIds: string[]) {
       if (!services.length) return [];
       const { data: bookings, error } = await supabase
         .from("bookings_with_start")
-        .select("id, service_id, status, price, starts_at, ends_at, created_at")
+        .select("id, service_id, status, price, starts_at, ends_at, created_at, refunded_at")
         .in(
           "service_id",
           services.map((s) => s.id),
@@ -169,7 +169,10 @@ export default function ShopOrdersPage() {
                   <span role="columnheader">Status</span>
                 </div>
                 {shown.map((b) => {
-                  const status = STATUS[b.status ?? ""] ?? { label: b.status, className: "" };
+                  const status =
+                    b.status === "cancelled" && b.refunded_at
+                      ? { label: "Refunded", className: "status-refunded" }
+                      : (STATUS[b.status ?? ""] ?? { label: b.status, className: "" });
                   return (
                     <div key={b.id} className="orders-row" role="row">
                       <span role="cell">

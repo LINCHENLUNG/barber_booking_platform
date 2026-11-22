@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowLeft, CalendarCheck, LoaderCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
@@ -37,6 +37,18 @@ export default function BarberDetailPage() {
   usePageTitle(barber ? `${title} — Barberly` : "Barber — Barberly");
   // Only customer accounts can book (create_booking enforces this server-side too).
   const notCustomer = !!user && !!profile && profile.role !== "customer";
+
+  // Re-book: /barbers/:id?book=<service_id> opens the Book dialog with that service picked.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const rebookService = searchParams.get("book");
+  useEffect(() => {
+    if (!rebookService || !barber || !profile) return;
+    if (profile.role === "customer" && barber.services.some((s) => s.id === rebookService)) {
+      setServiceId(rebookService);
+      setOpen(true);
+    }
+    setSearchParams({}, { replace: true });
+  }, [rebookService, barber, profile, setSearchParams]);
 
   const currency = settings?.currency ?? "twd";
   const minor = settings?.currency_minor_units ?? 0;

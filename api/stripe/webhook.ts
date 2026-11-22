@@ -18,6 +18,7 @@ async function rawBody(req: VercelRequest): Promise<Buffer> {
  * POST /api/stripe/webhook — the ONLY writer of bookings.status = 'paid'.
  * On checkout.session.completed + payment_status 'paid': flip pending_payment → paid, stamp
  * paid_at + stripe_payment_intent_id. No split / ledger here (that's computed at payout time).
+ * If the booking was already cancelled when the payment lands, the payment is refunded.
  */
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -76,10 +77,40 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(500).json({ error: "update failed" }); // non-2xx → Stripe retries
   }
   if (!data?.length) {
-    console.warn(
-      "webhook: no pending_payment booking to flip (already paid or cancelled)",
-      bookingId,
-    );
+    // Already paid (a re-delivery: nothing to do) — or CANCELLED before this payment landed
+    // (e.g. paid in another tab after cancelling). Never keep money for a cancelled booking:
+    // refund it automatically and record the refund on the booking.
+    const { data: current } = await supabaseAdmin
+      .from("bookings")
+      .select("status, refunded_at")
+      .eq("id", bookingId)
+      .maybeSingle();
+    if (current?.status === "cancelled" && !current.refunded_at && paymentIntent) {
+      try {
+        const refund = await stripe.refunds.create(
+          {
+            payment_intent: paymentIntent,
+            reason: "requested_by_customer",
+            metadata: { booking_id: bookingId, cause: "paid_after_cancel" },
+          },
+          { idempotencyKey: `refund-booking-${bookingId}` },
+        );
+        await supabaseAdmin
+          .from("bookings")
+          .update({
+            paid_at: new Date().toISOString(),
+            stripe_payment_intent_id: paymentIntent,
+            refunded_at: new Date().toISOString(),
+            stripe_refund_id: refund.id,
+          })
+          .eq("id", bookingId)
+          .eq("status", "cancelled");
+        console.warn("webhook: payment for a cancelled booking was refunded", bookingId, refund.id);
+      } catch (err) {
+        console.error("webhook: refund for cancelled booking failed", bookingId, err);
+        return res.status(500).json({ error: "refund failed" }); // non-2xx → Stripe retries
+      }
+    }
   }
   return res.status(200).json({ received: true });
 }

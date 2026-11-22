@@ -1011,3 +1011,7 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+.status-refunded {
+  background: oklch(0.93 0.04 240);
+  color: oklch(0.42 0.08 250);
+}

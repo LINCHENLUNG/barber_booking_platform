@@ -1,15 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { CalendarX, CreditCard, LoaderCircle, MapPin } from "lucide-react";
+import { CalendarX, CreditCard, LoaderCircle, MapPin, RotateCcw } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import { useMyBookings } from "@/hooks/useBuyerData";
 import { usePlatformSettings } from "@/hooks/useShopData";
 import { ShellHeader } from "@/components/ShellHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { startCheckout } from "@/lib/checkout";
+import { cancelBooking, startCheckout } from "@/lib/checkout";
 import { errMessage } from "@/lib/errors";
 import { formatMoney } from "@/lib/shop";
 import { DISPLAY_TZ_LABEL, dayKey, fmtDay, fmtTime } from "@/lib/time";
@@ -39,19 +38,27 @@ export default function MyBookingsPage() {
     }
   }
 
-  async function cancel(id: string) {
-    if (!window.confirm("Cancel this booking? The time slots will be released.")) return;
+  async function cancel(id: string, paid: boolean, amount: string) {
+    const question = paid
+      ? `Cancel this booking? You'll get a full refund of ${amount} to your card, and the time will be released.`
+      : "Cancel this booking? The time slots will be released.";
+    if (!window.confirm(question)) return;
     setCancelling(id);
-    // Only the status changes; the trg_free_slots_on_cancel trigger releases the booking_slots.
-    const { error } = await supabase.from("bookings").update({ status: "cancelled" }).eq("id", id);
-    setCancelling(undefined);
-    if (error) {
-      toast.error(errMessage(error, "Could not cancel the booking."));
-      return;
+    try {
+      // Server route: refunds paid bookings through Stripe first, then cancels (frees the slots).
+      const { refunded } = await cancelBooking(id);
+      toast.success(refunded ? `Booking cancelled — ${amount} refunded` : "Booking cancelled", {
+        ...(refunded
+          ? { description: "Refunds usually reach your card within 5–10 business days." }
+          : {}),
+      });
+    } catch (e) {
+      toast.error(errMessage(e, "Could not cancel the booking."));
+    } finally {
+      setCancelling(undefined);
+      await queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
+      await queryClient.invalidateQueries({ queryKey: ["barber-slots"] });
     }
-    toast.success("Booking cancelled");
-    await queryClient.invalidateQueries({ queryKey: ["my-bookings"] });
-    await queryClient.invalidateQueries({ queryKey: ["barber-slots"] });
   }
 
   return (
@@ -79,9 +86,17 @@ export default function MyBookingsPage() {
 
         <ul className="space-y-4 mt-8">
           {bookings.map((b) => {
-            const status = STATUS[b.status ?? ""] ?? { label: b.status, className: "" };
+            const refunded = b.status === "cancelled" && !!b.refunded_at;
+            const status = refunded
+              ? { label: "Refunded", className: "status-refunded" }
+              : (STATUS[b.status ?? ""] ?? { label: b.status, className: "" });
             const barber = b.service?.barbers;
             const live = b.status === "pending_payment" || b.status === "paid";
+            const amount = formatMoney(
+              b.price ?? 0,
+              settings?.currency ?? "twd",
+              settings?.currency_minor_units ?? 0,
+            );
             return (
               <li key={b.id} className="shop-card booking-row">
                 <div className="min-w-0">
@@ -116,13 +131,10 @@ export default function MyBookingsPage() {
                   )}
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="font-medium">
-                    {formatMoney(
-                      b.price ?? 0,
-                      settings?.currency ?? "twd",
-                      settings?.currency_minor_units ?? 0,
-                    )}
-                  </p>
+                  <p className="font-medium">{amount}</p>
+                  {refunded && (
+                    <p className="text-xs text-muted-foreground mt-1">Refunded in full</p>
+                  )}
                   {b.status === "pending_payment" && (
                     <Button
                       size="sm"
@@ -141,7 +153,7 @@ export default function MyBookingsPage() {
                       variant="chip"
                       className="mt-3"
                       disabled={cancelling === b.id}
-                      onClick={() => void cancel(b.id!)}
+                      onClick={() => void cancel(b.id!, b.status === "paid", amount)}
                     >
                       {cancelling === b.id ? (
                         <LoaderCircle className="animate-spin" />
@@ -149,6 +161,14 @@ export default function MyBookingsPage() {
                         <CalendarX />
                       )}
                       Cancel
+                    </Button>
+                  )}
+                  {b.status === "cancelled" && barber && b.service_id && (
+                    <Button size="sm" variant="pill" className="mt-3" asChild>
+                      <Link to={`/barbers/${barber.id}?book=${b.service_id}`}>
+                        <RotateCcw />
+                        Re-book
+                      </Link>
                     </Button>
                   )}
                 </div>
