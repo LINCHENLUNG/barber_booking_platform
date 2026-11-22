@@ -1015,3 +1015,32 @@
   background: oklch(0.93 0.04 240);
   color: oklch(0.42 0.08 250);
 }
+
+/* ── M2.2 payouts (admin builder + ledger, shop earnings) ── */
+.owed-row {
+  grid-template-columns: 28px 1fr 1.3fr 1.3fr 0.9fr 0.8fr 0.8fr 0.8fr;
+  cursor: pointer;
+}
+.ledger-row {
+  grid-template-columns: 1.6fr 0.8fr 0.6fr 0.8fr 0.8fr 0.8fr 1.1fr 1.6fr;
+}
+.earn-row {
+  grid-template-columns: 0.9fr 1.4fr 0.8fr 0.8fr 0.8fr;
+}
+.payout-builder {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px 24px;
+  align-items: flex-end;
+  justify-content: space-between;
+  padding: 20px 24px;
+}
+@media (max-width: 760px) {
+  .owed-row {
+    grid-template-columns: 28px 1fr 1fr;
+  }
+  .ledger-row,
+  .earn-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}

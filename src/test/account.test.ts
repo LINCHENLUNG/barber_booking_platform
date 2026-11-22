@@ -14,14 +14,16 @@ describe("account roles (profiles.role)", () => {
       "https://x.test/barbers",
     );
   });
-  it("treats only an exact 'shop' role as a shop", () => {
+  it("recognises only exact 'shop' / 'admin' roles", () => {
     expect(accountKind("shop")).toBe("shop");
+    expect(accountKind("admin")).toBe("admin");
     expect(accountKind("barber")).toBe("customer");
-    expect(accountKind("admin")).toBe("customer");
+    expect(accountKind("Admin")).toBe("customer");
     expect(accountKind(undefined)).toBe("customer");
   });
-  it("routes shop and customer only", () => {
+  it("routes each role to its home", () => {
     expect(homePathFor("shop")).toBe("/shop");
+    expect(homePathFor("admin")).toBe("/admin/payouts");
     expect(homePathFor("customer")).toBe("/barbers");
   });
 });

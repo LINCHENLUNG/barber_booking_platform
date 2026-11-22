@@ -4,7 +4,7 @@ import { useState, type FormEvent } from "react";
 import { ArrowLeft, ArrowRight, Eye, EyeOff, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import { homePathFor, safeNext, signupOptions, type AccountKind } from "@/lib/account";
+import { homePathFor, safeNext, signupOptions, type SignupRole } from "@/lib/account";
 import { fetchRole } from "@/hooks/useProfile";
 import woman from "@/assets/editorial-woman.jpg";
 
@@ -13,7 +13,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [signup, setSignup] = useState(false);
-  const [role, setRole] = useState<AccountKind>("customer");
+  const [role, setRole] = useState<SignupRole>("customer");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);

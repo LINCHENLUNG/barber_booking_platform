@@ -47,18 +47,22 @@ describe("App routing (SPA)", () => {
     expect(screen.getByRole("link", { name: "Login" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse barbers" })).toBeInTheDocument();
   });
-  it.each(["/bookings", "/shop", "/shop/bookings", "/shop/orders"])(
-    "redirects a signed-out visitor from %s to /login",
-    (path) => {
-      renderAt(path);
-      expect(screen.getByText("Welcome back.")).toBeInTheDocument();
-    },
-  );
+  it.each([
+    "/bookings",
+    "/shop",
+    "/shop/bookings",
+    "/shop/orders",
+    "/shop/earnings",
+    "/admin/payouts",
+  ])("redirects a signed-out visitor from %s to /login", (path) => {
+    renderAt(path);
+    expect(screen.getByText("Welcome back.")).toBeInTheDocument();
+  });
   it("shows the 404 page for unknown routes", () => {
     renderAt("/nope");
     expect(screen.getByText("Page not found")).toBeInTheDocument();
   });
-  it("has no admin page", () => {
+  it("has no bare /admin page (only /admin/payouts)", () => {
     renderAt("/admin");
     expect(screen.getByText("Page not found")).toBeInTheDocument();
   });

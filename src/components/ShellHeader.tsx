@@ -10,7 +10,8 @@ import { useProfile } from "@/hooks/useProfile";
 /**
  * App header, role-based (profiles.role). Signed out: Browse barbers + Login.
  * Customer: Browse barbers, My bookings. Shop: Browse barbers, My shop,
- * Management (/shop/bookings), Orders (/shop/orders). "Booking" wording is customer-only.
+ * Management (/shop/bookings), Orders (/shop/orders), Earnings (/shop/earnings).
+ * Admin: Browse barbers, Payouts (/admin/payouts). "Booking" wording is customer-only.
  */
 export function ShellHeader() {
   const user = useAccount();
@@ -67,6 +68,19 @@ export function ShellHeader() {
             <NavLink to="/shop/orders" className={navClass}>
               Orders
             </NavLink>
+            <NavLink to="/shop/earnings" className={navClass}>
+              Earnings
+            </NavLink>
+          </nav>
+        )}
+        {user && !isLoading && role === "admin" && (
+          <nav className="shell-nav" aria-label="Admin">
+            <NavLink to="/barbers" end className={navClass}>
+              Browse barbers
+            </NavLink>
+            <NavLink to="/admin/payouts" className={navClass}>
+              Payouts
+            </NavLink>
           </nav>
         )}
         {user && !isLoading && role === "customer" && (
@@ -83,6 +97,7 @@ export function ShellHeader() {
           <>
             <span className="break-all">Hi {user.email}</span>
             {role === "shop" && <span className="service-chip rounded-full">barber</span>}
+            {role === "admin" && <span className="service-chip rounded-full">admin</span>}
             <Button variant="chip" disabled={busy} onClick={signOut}>
               <LogOut />
               Sign Out
