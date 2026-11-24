@@ -4,8 +4,9 @@ import { MapPin, Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAccount } from "@/components/AuthProvider";
-import { useMyBarbers, type Barber } from "@/hooks/useShopData";
+import { useMyBarbers, usePhotos, type Barber } from "@/hooks/useShopData";
 import { BarberForm, type BarberDraft } from "./BarberForm";
+import { BarberAutofill } from "./BarberAutofill";
 import { BarberPhotoManager } from "./BarberPhotoManager";
 
 /** B. My barbers — a shop may run MANY barbers (no one-barber limit). */
@@ -151,10 +152,31 @@ export function BarbersManager() {
                 </div>
               </div>
             )}
-            <BarberPhotoManager barberId={barber.id} />
+            <BarberPhotosWithAi barberId={barber.id} />
           </li>
         ))}
       </ul>
     </section>
+  );
+}
+
+/**
+ * The barber card's photos + M4 AI autofill. Owns the per-photo「AI」selection (screen state
+ * only, never saved), shared by the checkboxes, 全部選取 and the「AI 自動填寫」button.
+ */
+function BarberPhotosWithAi({ barberId }: { barberId: string }) {
+  const { data: photos = [] } = usePhotos(barberId);
+  const [aiSelected, setAiSelected] = useState<Set<string>>(() => new Set());
+  // Only send ids of photos that still exist (a deleted photo's id is dropped).
+  const selectedIds = photos.filter((p) => aiSelected.has(p.id)).map((p) => p.id);
+  return (
+    <>
+      <BarberAutofill barberId={barberId} photos={photos} selectedIds={selectedIds} />
+      <BarberPhotoManager
+        barberId={barberId}
+        aiSelected={aiSelected}
+        onAiSelectedChange={setAiSelected}
+      />
+    </>
   );
 }

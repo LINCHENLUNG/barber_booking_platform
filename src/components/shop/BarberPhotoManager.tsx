@@ -1,7 +1,16 @@
 import { useRef, useState, type ChangeEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, ArrowRight, ImagePlus, LoaderCircle, Star, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCheck,
+  ImagePlus,
+  LoaderCircle,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { photoUrl, usePhotos, type BarberPhoto } from "@/hooks/useShopData";
 import { photoPath } from "@/lib/shop";
@@ -10,14 +19,33 @@ import { photoPath } from "@/lib/shop";
  * C. Sample hairstyle photos for one barber. Files go to the public `barber-photos` bucket under
  * `<barber_id>/<uuid>.<ext>` (the Storage policy only lets the owning shop write there); each file
  * gets a `barber_photos` row. Delete removes both the object and the row.
+ *
+ * M4: each photo also has an「AI」checkbox (separate from Featured) choosing which photos the
+ * AI autofill reads. The selection lives in the parent card's state only — never in the DB.
  */
-export function BarberPhotoManager({ barberId }: { barberId: string }) {
+export function BarberPhotoManager({
+  barberId,
+  aiSelected,
+  onAiSelectedChange,
+}: {
+  barberId: string;
+  aiSelected: Set<string>;
+  onAiSelectedChange: (next: Set<string>) => void;
+}) {
   const queryClient = useQueryClient();
   const { data: photos = [], isLoading } = usePhotos(barberId);
   const input = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["photos", barberId] });
+  const allSelected = photos.length > 0 && photos.every((p) => aiSelected.has(p.id));
+
+  function toggleAi(id: string, on: boolean) {
+    const next = new Set(aiSelected);
+    if (on) next.add(id);
+    else next.delete(id);
+    onAiSelectedChange(next);
+  }
 
   async function upload(e: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -90,7 +118,10 @@ export function BarberPhotoManager({ barberId }: { barberId: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-sm font-medium">作品照 Sample hairstyle photos</p>
-          <p className="field-hint mt-0">Public portfolio. Star your best work as Featured.</p>
+          <p className="field-hint mt-0">
+            Public portfolio. Star your best work as Featured; tick AI on the photos the AI should
+            write about.
+          </p>
         </div>
         <input
           ref={input}
@@ -101,10 +132,28 @@ export function BarberPhotoManager({ barberId }: { barberId: string }) {
           onChange={upload}
           aria-label="Upload sample hairstyle photos"
         />
-        <Button type="button" variant="chip" disabled={busy} onClick={() => input.current?.click()}>
-          {busy ? <LoaderCircle className="animate-spin" /> : <ImagePlus />}
-          Upload photos
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          {photos.length > 0 && (
+            <Button
+              type="button"
+              variant="chip"
+              onClick={() =>
+                onAiSelectedChange(allSelected ? new Set() : new Set(photos.map((p) => p.id)))
+              }
+            >
+              <CheckCheck />
+              {allSelected ? "取消全選 / Clear" : "全部選取 / Select all"}
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="chip"
+            disabled={busy}
+            onClick={() => input.current?.click()}
+          >
+            {busy ? <LoaderCircle className="animate-spin" /> : <ImagePlus />}+ 上傳 / Upload
+          </Button>
+        </div>
       </div>
       {error && (
         <p role="alert" className="text-sm text-destructive mt-3">
@@ -116,7 +165,9 @@ export function BarberPhotoManager({ barberId }: { barberId: string }) {
       ) : (
         <ul className="photo-wall mt-4">
           {photos.map((photo, i) => (
-            <li key={photo.id} className="photo-tile">
+            // Keyed on the caption too, so the uncontrolled caption input remounts after an
+            // AI draft is applied (套用) and shows the saved text.
+            <li key={`${photo.id}:${photo.caption ?? ""}`} className="photo-tile">
               <div className="photo-frame">
                 <img src={photoUrl(photo.storage_path)} alt={photo.caption ?? "Sample hairstyle"} />
                 {photo.is_featured && <span className="popular-badge">Featured</span>}
@@ -129,19 +180,29 @@ export function BarberPhotoManager({ barberId }: { barberId: string }) {
                 onBlur={(e) => void saveCaption(photo, e.target.value.trim())}
               />
               <div className="flex items-center justify-between">
-                <Button
-                  type="button"
-                  size="icon"
-                  variant="ghost"
-                  aria-label={photo.is_featured ? "Unmark featured" : "Mark as featured"}
-                  aria-pressed={photo.is_featured}
-                  onClick={async () => {
-                    await update(photo.id, { is_featured: !photo.is_featured });
-                    await refresh();
-                  }}
-                >
-                  <Star className={photo.is_featured ? "fill-current" : ""} />
-                </Button>
+                <div className="flex items-center gap-1">
+                  <Button
+                    type="button"
+                    size="icon"
+                    variant="ghost"
+                    aria-label={photo.is_featured ? "Unmark featured" : "Mark as featured"}
+                    aria-pressed={photo.is_featured}
+                    onClick={async () => {
+                      await update(photo.id, { is_featured: !photo.is_featured });
+                      await refresh();
+                    }}
+                  >
+                    <Star className={photo.is_featured ? "fill-current" : ""} />
+                  </Button>
+                  <label className="flex items-center gap-1.5 text-xs font-medium cursor-pointer select-none">
+                    <Checkbox
+                      checked={aiSelected.has(photo.id)}
+                      onCheckedChange={(v) => toggleAi(photo.id, v === true)}
+                      aria-label="Use this photo for AI autofill"
+                    />
+                    AI
+                  </label>
+                </div>
                 <div className="flex">
                   <Button
                     type="button"
